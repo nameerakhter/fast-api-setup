@@ -1,42 +1,37 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List
+import os
+
+from pymongo import MongoClient
+
+from models.user import User, UserRole
+
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017")
+DATABASE_NAME = "course_store"
+COLLECTION_NAME = "users"
 
 
-app = FastAPI()
+def main() -> None:
+    client = MongoClient(MONGODB_URI)
+    db = client[DATABASE_NAME]
+    users = db[COLLECTION_NAME]
+
+    print("Connected to MongoDB")
+
+    student = User(
+        email="akhtarnameer@gmail.com",
+        name="Nameer",
+        role=UserRole.STUDENT,
+        enrolled_courses=[],
+    )
+    result = users.insert_one(student.model_dump(mode="json"))
+    print(f"Created user with id: {result.inserted_id}")
+
+    for doc in users.find({"role": UserRole.STUDENT.value}):
+        user = User(**doc)
+        print(f"Student: {user.name} ({user.email})")
+
+    client.close()
+    print("Disconnected")
 
 
-class Interns(BaseModel):
-    id: int
-    name: str
-    college: str
-
-
-
-names: List[Interns] =[]
-
-
-
-@app.get("/")
-def read_root():
-    return {"message: Welcome interns to ITDA"}
-
-@app.get("/names")
-def return_names():
-    return Interns
-
-@app.post("/add-intern")
-def add_intern(intern: Interns):
-    names.append(intern)
-    return {"message": "Intern added successfully", "intern": intern}
-
-
-
-
-@app.put("/name/{name_id}")
-def update_name(name_id: int, intern: Interns):
-    for index, item in enumerate(names):
-        if item.id == name_id:
-            names[index] = intern
-            return {"message": "Intern updated successfully"}
-    return {"error": "Intern not found"}
+if __name__ == "__main__":
+    main()
