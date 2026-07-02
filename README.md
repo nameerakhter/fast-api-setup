@@ -108,10 +108,10 @@ mongosh
 By default, `main.py` connects to:
 
 ```
-mongodb://127.0.0.1:27017
+mongodb://127.0.0.1:27017/course_store
 ```
 
-It uses the database `course_store` and the collection `users`.
+The database name is in the URI. Collections used in the demo: `users` and `courses`.
 
 To point at a different host (Atlas, Docker, etc.), set `MONGODB_URI`:
 
@@ -131,26 +131,39 @@ python main.py
 
 ## Run the MongoDB sample
 
+`main.py` is a **step-by-step tutorial** (like a Mongoose demo). Each step is a function you run one at a time.
+
 With the venv activated and MongoDB running:
+
+1. Open `main.py` and scroll to the bottom.
+2. **Uncomment exactly one** step call (start with `step1_connect()`).
+3. Run:
 
 ```bash
 python main.py
 ```
 
-Expected output:
+4. Comment that step out, uncomment the next one, and run again.
 
-```
-Connected to MongoDB
-Created user with id: ...
-Student: Nameer (akhtarnameer@gmail.com)
-Disconnected
-```
+| Step | Function                | What it does                   |
+| ---- | ----------------------- | ------------------------------ |
+| 1    | `step1_connect()`       | Connect and disconnect only    |
+| 2    | `step2_insert_user()`   | Insert Alice into `users`      |
+| 3    | `step3_read_users()`    | Read all users                 |
+| 4    | `step4_update_user()`   | Update Alice's name            |
+| 5    | `step5_delete_user()`   | Delete Alice                   |
+| 6    | `step6_insert_course()` | Insert a course into `courses` |
+| 7    | `step7_update_course()` | Update course price            |
+| 8    | `step8_delete_course()` | Delete the course              |
 
-Each run inserts a new user. If you hit a duplicate-email error, clear the collection in `mongosh`:
+Run steps **in order** for the user/course demos (insert before read/update/delete).
+
+To clear collections manually in `mongosh`:
 
 ```javascript
 use course_store
 db.users.deleteMany({})
+db.courses.deleteMany({})
 ```
 
 ## How MongoDB works in this project
@@ -160,8 +173,10 @@ MongoDB stores **documents** (JSON-like objects) inside **collections**. A **dat
 ```
 MongoDB server
     └── course_store          (database)
-            └── users         (collection)
-                    └── { email, name, role, enrolled_courses, ... }
+            ├── users         (collection)
+            │       └── { email, name, role, enrolled_courses, ... }
+            └── courses       (collection)
+                    └── { title, description, price, instructor, published }
 ```
 
 ### Request → database flow
@@ -177,9 +192,9 @@ Your Python code gets dicts back (or insert results)
 ```
 
 1. **`MongoClient`** opens a connection to the MongoDB server.
-2. **`client[DATABASE_NAME]`** selects the database (`course_store`).
-3. **`db[COLLECTION_NAME]`** selects the collection (`users`).
-4. **`insert_one` / `find`** read and write documents.
+2. **`client.get_default_database()`** selects the database from the URI (`course_store`).
+3. **`db["users"]` / `db["courses"]`** select a collection.
+4. **`insert_one` / `find` / `find_one_and_update` / `find_one_and_delete`** perform CRUD on documents.
 
 ### User schema (`models/user.py`)
 
@@ -197,40 +212,58 @@ class User(BaseModel):
     enrolled_courses: List[str] = []
 ```
 
-| Field              | Type     | Purpose                                      |
-| ------------------ | -------- | -------------------------------------------- |
-| `email`            | `str`    | Login / contact (unique in a real app)       |
-| `name`             | `str`    | Display name                                 |
-| `role`             | `enum`   | `student` or `instructor` for a course store |
-| `enrolled_courses` | `list`   | Course IDs the user has bought or enrolled in |
+| Field              | Type   | Purpose                                       |
+| ------------------ | ------ | --------------------------------------------- |
+| `email`            | `str`  | Login / contact (unique in a real app)        |
+| `name`             | `str`  | Display name                                  |
+| `role`             | `enum` | `student` or `instructor` for a course store  |
+| `enrolled_courses` | `list` | Course IDs the user has bought or enrolled in |
 
 ### Core pieces in `main.py`
 
-**Connect:**
+Each step follows the same pattern: connect → do one thing → disconnect.
+
+**Connect (Step 1):**
 
 ```python
 client = MongoClient(MONGODB_URI)
-db = client["course_store"]
+db = client.get_default_database()
 users = db["users"]
 ```
 
-**Create a validated user and insert:**
+**Insert (Step 2) — like `User.create()`:**
 
 ```python
-student = User(email="...", name="...", role=UserRole.STUDENT)
-users.insert_one(student.model_dump(mode="json"))
+user = User(name="Alice", email="alice@example.com", role=UserRole.STUDENT)
+users.insert_one(user.model_dump(mode="json"))
 ```
 
 `model_dump(mode="json")` turns the Pydantic model into a plain dict MongoDB can store (enums become strings).
 
-**Query and read back:**
+**Read all (Step 3) — like `User.find()`:**
 
 ```python
-for doc in users.find({"role": "student"}):
-    user = User(**doc)
+for doc in users.find():
+    print(doc)
 ```
 
-`find` returns raw dicts from MongoDB. Pydantic rebuilds a `User` object from each dict.
+**Update (Step 4) — like `findOneAndUpdate(..., { new: true })`:**
+
+```python
+from pymongo import ReturnDocument
+
+updated = users.find_one_and_update(
+    {"email": "alice@example.com"},
+    {"$set": {"name": "Alice Johnson"}},
+    return_document=ReturnDocument.AFTER,
+)
+```
+
+**Delete (Step 5) — like `findOneAndDelete()`:**
+
+```python
+deleted = users.find_one_and_delete({"email": "alice@example.com"})
+```
 
 **Disconnect:**
 
@@ -240,13 +273,15 @@ client.close()
 
 ### PyMongo vs Mongoose (quick comparison)
 
-| Concept        | Mongoose (Node.js)     | This project (Python)        |
-| -------------- | ---------------------- | ---------------------------- |
-| Driver         | `mongoose`             | `pymongo`                    |
-| Schema         | `mongoose.Schema`      | Pydantic `BaseModel`         |
-| Connect        | `mongoose.connect()`   | `MongoClient(uri)`           |
-| Create         | `User.create({...})`   | `users.insert_one({...})`    |
-| Read           | `User.find({...})`     | `users.find({...})`          |
+| Concept         | Mongoose (Node.js)                          | This project (Python)                                   |
+| --------------- | ------------------------------------------- | ------------------------------------------------------- |
+| Driver          | `mongoose`                                  | `pymongo`                                               |
+| Schema          | `mongoose.Schema`                           | Pydantic `BaseModel`                                    |
+| Connect         | `mongoose.connect()`                        | `MongoClient(uri)`                                      |
+| Create          | `User.create({...})`                        | `users.insert_one({...})`                               |
+| Read many       | `User.find()`                               | `users.find()`                                          |
+| Update + return | `User.findOneAndUpdate(..., { new: true })` | `users.find_one_and_update(..., return_document=AFTER)` |
+| Delete + return | `User.findOneAndDelete(...)`                | `users.find_one_and_delete(...)`                        |
 
 ## Project structure
 
@@ -254,7 +289,8 @@ client.close()
 fast-api-setup/
 ├── main.py              # MongoDB connection and sample CRUD
 ├── models/
-│   └── user.py          # User schema (Pydantic)
+│   ├── user.py          # User schema (Pydantic)
+│   └── course.py        # Course schema (Pydantic)
 ├── requirements.txt     # Pinned dependencies
 ├── .gitignore           # Ignores venv/, __pycache__/, .env
 ├── README.md
