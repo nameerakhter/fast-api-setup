@@ -13,15 +13,13 @@ A course-selling site needs a program that:
 FastAPI is that long-running server:
   React  →  HTTP  →  FastAPI  →  PyMongo  →  MongoDB  →  JSON back
 
-Compare with mongodb_steps.py when teaching. Use main.step_by_step.example.py
-to build this file one route at a time.
+Run mongodb_steps.py first to learn PyMongo, then use this file for the real API.
 """
 
 import os
 from contextlib import asynccontextmanager
 from typing import Any
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pymongo import MongoClient, ReturnDocument
@@ -32,8 +30,6 @@ from models import (
     doc_to_json,
     parse_object_id,
 )
-
-load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017/course_store")
 

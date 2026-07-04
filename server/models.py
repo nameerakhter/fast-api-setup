@@ -1,7 +1,13 @@
-"""Collection names and helpers for the course store."""
+"""Collection names and helpers for the course store ."""
+
+from pathlib import Path
 
 from bson import ObjectId
 from bson.errors import InvalidId
+from dotenv import load_dotenv
+
+# Single .env at repo root (activate venv from project root)
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 USERS_COLLECTION = "users"
 COURSES_COLLECTION = "courses"
