@@ -1,18 +1,17 @@
 """
 Step-by-step MongoDB tutorial — like mongoose.js in the JS course.
 
-Run ONE step at a time: uncomment a single line at the bottom, then:
+Run ONE step at a time: uncomment a single line at the bottom, then
+(from server/, with root venv activated):
+
   python mongodb_steps.py
 """
 
 import os
 
-from dotenv import load_dotenv
 from pymongo import MongoClient, ReturnDocument
 
 from models import COURSES_COLLECTION, USERS_COLLECTION, doc_to_json
-
-load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017/course_store")
 
