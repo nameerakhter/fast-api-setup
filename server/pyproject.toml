@@ -1,0 +1,17 @@
+[project]
+name = "course-store-server"
+version = "0.1.0"
+description = "Teaching backend: PyMongo + FastAPI course store"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pymongo>=4.10.0",
+    "python-dotenv>=1.0.0",
+]
+
+# Run from the server/ folder:
+#   pip install -r requirements.txt
+#   python mongodb_steps.py
+#   uvicorn main:app --reload
+#   uvicorn main.step_by_step.example:app --reload
