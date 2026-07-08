@@ -1,3 +1,13 @@
+# =============================================================================
+# USER SCHEMA (Pydantic)
+# =============================================================================
+#
+# Defines the shape of a user document in MongoDB.
+# Used by main.py (script) and server.py (API routes).
+#
+# UserRole is an enum so only "student" or "instructor" are allowed.
+# =============================================================================
+
 from enum import Enum
 from typing import List
 
