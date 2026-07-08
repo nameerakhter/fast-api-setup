@@ -3,10 +3,10 @@
 # =============================================================================
 #
 # Streamlit runs in your browser. It cannot connect to MongoDB directly.
-# Instead it sends HTTP requests to your FastAPI server (server.py).
+# Instead it sends HTTP requests to your FastAPI server (server/main.py).
 #
 # Flow:
-#   User clicks "Load courses" in Streamlit (app/app.py)
+#   User clicks "Load courses" in Streamlit (client/app.py)
 #         ↓
 #   get_courses() below runs httpx GET http://localhost:8000/courses
 #         ↓
@@ -22,7 +22,7 @@ from typing import Any
 
 import httpx
 
-# FastAPI default when you run: uvicorn server:app --reload
+# FastAPI default when you run: cd server && uvicorn main:app --reload
 BASE_URL = "http://localhost:8000"
 TIMEOUT = 10.0
 
@@ -44,14 +44,16 @@ def get_courses() -> list[dict[str, Any]]:
 def create_course(
     title: str,
     description: str = "",
-    instructor_email: str = "",
+    instructor: str = "",
     price: float = 0.0,
+    published: bool = True,
 ) -> dict[str, Any]:
     payload = {
         "title": title,
         "description": description,
-        "instructor_email": instructor_email,
+        "instructor": instructor,
         "price": price,
+        "published": published,
     }
     response = _request("POST", "/courses", json=payload)
     response.raise_for_status()
@@ -72,24 +74,14 @@ def get_users() -> list[dict[str, Any]]:
     return response.json()
 
 
-def create_user(
-    email: str,
-    name: str,
-    role: str = "student",
-    enrolled_courses: list[str] | None = None,
-) -> dict[str, Any]:
-    payload = {
-        "email": email,
-        "name": name,
-        "role": role,
-        "enrolled_courses": enrolled_courses or [],
-    }
+def create_user(name: str, email: str, role: str = "student") -> dict[str, Any]:
+    payload = {"name": name, "email": email, "role": role}
     response = _request("POST", "/users", json=payload)
     response.raise_for_status()
     return response.json()
 
 
-def delete_user(email: str) -> dict[str, Any]:
-    response = _request("DELETE", f"/users/{email}")
+def delete_user(user_id: str) -> dict[str, Any]:
+    response = _request("DELETE", f"/users/{user_id}")
     response.raise_for_status()
     return response.json()

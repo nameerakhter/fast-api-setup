@@ -3,24 +3,24 @@
 # =============================================================================
 #
 # This is the user-facing app. It does NOT touch MongoDB.
-# Every action calls app/api.py, which sends HTTP to FastAPI (server.py).
+# Every action calls client/api.py, which sends HTTP to FastAPI (server/main.py).
 #
 # Design choices (same as the React refresher App.jsx):
 #   - Load courses  → GET only, manual button (not on page load)
 #   - Add course    → POST only, does NOT auto-refetch the list
 #   - Delete        → DELETE only, removes row from local state (no GET refetch)
 #
-# Run with: streamlit run app/app.py
+# Run with: cd client && streamlit run app.py
 # Open: http://localhost:8501
 #
 # You need BOTH terminals running:
-#   1. uvicorn server:app --reload   (API on :8000)
-#   2. streamlit run app/app.py      (UI on :8501)
+#   1. cd server && uvicorn main:app --reload   (API on :8000)
+#   2. cd client && streamlit run app.py        (UI on :8501)
 # =============================================================================
 
 import streamlit as st
 
-from app import api
+import api
 
 st.set_page_config(page_title="Course Store", page_icon="📚", layout="wide")
 
@@ -75,8 +75,9 @@ st.subheader("Add course")
 with st.form("add_course_form", clear_on_submit=True):
     title = st.text_input("Title", placeholder="Intro to Python")
     description = st.text_area("Description", placeholder="A beginner-friendly course.")
-    instructor_email = st.text_input("Instructor email", placeholder="instructor@example.com")
+    instructor = st.text_input("Instructor", placeholder="Bob")
     price = st.number_input("Price", min_value=0.0, step=1.0, value=0.0)
+    published = st.checkbox("Published", value=True)
     submitted = st.form_submit_button("Add course")
 
     if submitted:
@@ -87,8 +88,9 @@ with st.form("add_course_form", clear_on_submit=True):
                 created = api.create_course(
                     title=title.strip(),
                     description=description.strip(),
-                    instructor_email=instructor_email.strip(),
+                    instructor=instructor.strip(),
                     price=price,
+                    published=published,
                 )
                 st.session_state.status = (
                     f"POST /courses — created \"{created['title']}\" (id: {created['id']}). "
@@ -112,8 +114,9 @@ else:
                 if course.get("description"):
                     st.write(course["description"])
                 st.caption(
-                    f"Instructor: {course.get('instructor_email') or '—'} · "
-                    f"Price: ${course.get('price', 0):.2f}"
+                    f"Instructor: {course.get('instructor') or '—'} · "
+                    f"Price: ${course.get('price', 0):.2f} · "
+                    f"Published: {'yes' if course.get('published') else 'no'}"
                 )
                 st.caption(f"ID: `{course['id']}`")
             with right:
