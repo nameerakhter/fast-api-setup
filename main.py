@@ -1,3 +1,22 @@
+# =============================================================================
+# WHY THIS FILE EXISTS (read this first)
+# =============================================================================
+#
+# This is a LEARNING script — not a web server.
+# Run it with: python main.py
+#
+# It connects to MongoDB directly with PyMongo, inserts a user, prints results,
+# then exits. Good for understanding how PyMongo works.
+#
+# For a real app (Streamlit + API), use:
+#   - server.py        → FastAPI listens for HTTP requests
+#   - app/app.py       → Streamlit UI calls the API over HTTP
+#
+# Scripts vs servers:
+#   main.py   → runs once, talks to DB directly, then stops
+#   server.py → stays running, waits for HTTP requests from Streamlit
+# =============================================================================
+
 import os
 
 from pymongo import MongoClient

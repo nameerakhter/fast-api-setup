@@ -248,13 +248,80 @@ client.close()
 | Create         | `User.create({...})`   | `users.insert_one({...})`    |
 | Read           | `User.find({...})`     | `users.find({...})`          |
 
+## Run the FastAPI server
+
+With the venv activated and MongoDB running:
+
+```bash
+uvicorn server:app --reload
+```
+
+API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+Routes:
+
+| Method | Path              | Description      |
+| ------ | ----------------- | ---------------- |
+| GET    | `/courses`        | List courses     |
+| POST   | `/courses`        | Create a course  |
+| DELETE | `/courses/{id}`   | Delete a course  |
+| GET    | `/users`          | List users       |
+| POST   | `/users`          | Create a user    |
+| DELETE | `/users/{email}`  | Delete a user    |
+
+CORS allows `http://localhost:8501` so the Streamlit app can call the API from the browser.
+
+## Streamlit + FastAPI
+
+Streamlit is a **client** — it calls FastAPI over HTTP with `httpx`, the same way a React app would use `fetch` against a Hono server. Streamlit does **not** import PyMongo.
+
+### Request flow
+
+```
+Streamlit UI (app/app.py)
+    │  button / form
+    ▼
+HTTP client (app/api.py)  —  GET / POST / DELETE
+    │  http://localhost:8000
+    ▼
+FastAPI (server.py)
+    │  route handlers
+    ▼
+PyMongo  →  MongoDB (course_store)
+```
+
+### Run both apps (two terminals)
+
+**Terminal 1 — API:**
+
+```bash
+uvicorn server:app --reload
+```
+
+**Terminal 2 — Streamlit UI:**
+
+```bash
+streamlit run app/app.py
+```
+
+Open [http://localhost:8501](http://localhost:8501).
+
+- **Load courses** — sends `GET /courses` only when you click the button (not on page load).
+- **Add course** — sends `POST /courses`; the list is **not** auto-refetched.
+- **Delete** — sends `DELETE /courses/{id}` and removes the row from local state only.
+
 ## Project structure
 
 ```
 fast-api-setup/
 ├── main.py              # MongoDB connection and sample CRUD
+├── server.py            # FastAPI REST API (users + courses)
+├── app/
+│   ├── api.py           # HTTP client wrappers (httpx)
+│   └── app.py           # Streamlit UI
 ├── models/
-│   └── user.py          # User schema (Pydantic)
+│   ├── user.py          # User schema (Pydantic)
+│   └── course.py        # Course schema (Pydantic)
 ├── requirements.txt     # Pinned dependencies
 ├── .gitignore           # Ignores venv/, __pycache__/, .env
 ├── README.md
@@ -268,6 +335,8 @@ python -m venv venv                 # Create venv
 .\venv\Scripts\Activate.ps1         # Activate (PowerShell)
 pip install -r requirements.txt     # Install deps
 python main.py                      # Run MongoDB sample
+uvicorn server:app --reload         # Start FastAPI server
+streamlit run app/app.py            # Start Streamlit UI
 deactivate                          # Exit venv
 ```
 
