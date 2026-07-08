@@ -7,48 +7,82 @@ Course store teaching repo: **PyMongo** + **FastAPI** backend, **Streamlit** cli
 | [`server/`](server/README.md) | MongoDB scripts + FastAPI CRUD API |
 | [`client/`](client/README.md) | Streamlit UI (calls the API over HTTP) |
 
-Everything uses **one virtual environment at the project root**.
+Everything uses **one virtual environment at the project root** (`fast-api-setup/venv/`).
+
+There is **no** separate venv inside `server/` or `client/`. If you `cd server` or `cd client` without activating the root venv first, commands like `uvicorn` and `streamlit` will fail with **command not found**.
 
 ## One-time setup
 
 From the project root (`fast-api-setup/`):
 
+**Linux / macOS (bash):**
+
+```bash
+python -m venv venv
+source venv/bin/activate    # prompt shows (venv)
+pip install -r requirements.txt
+cp .env.example .env
+# start MongoDB (e.g. sudo systemctl start mongod)
+```
+
+**Windows (PowerShell):**
+
 ```powershell
 python -m venv venv
-.\venv\Scripts\Activate.ps1
+.\venv\Scripts\Activate.ps1    # prompt shows (venv)
 pip install -r requirements.txt
 copy .env.example .env
 net start MongoDB
 ```
 
-Your prompt should show `(venv)`. Activate the same venv in every new terminal:
+Your prompt should show `(venv)` when the environment is active.
+
+## Activate venv (every new terminal)
+
+Open a terminal, go to the **project root**, activate venv, **then** `cd` into `server/` or `client/`:
+
+**Linux / macOS:**
+
+```bash
+cd fast-api-setup          # project root
+source venv/bin/activate   # (venv) must appear in your prompt
+cd server                  # or: cd client
+```
+
+**Windows (PowerShell):**
 
 ```powershell
+cd fast-api-setup
 .\venv\Scripts\Activate.ps1
+cd server                  # or: cd client
 ```
+
+If you see `bash: uvicorn: command not found`, you forgot to activate the root venv (or never ran `pip install -r requirements.txt`).
+
+If you see `No module named 'dotenv'`, the venv is active but dependencies are outdated — from project root run `pip install -r requirements.txt`.
 
 ## Run commands
 
-Always activate the **root** venv first, then `cd` into the folder you need.
+**Always:** project root → activate venv → `cd server` or `cd client` → run command.
 
-**MongoDB tutorial** (from `server/`):
+**MongoDB tutorial** (`server/`):
 
-```powershell
-cd server
+```bash
+# after: source venv/bin/activate  &&  cd server
 python mongodb_steps.py
 ```
 
-**FastAPI API** (from `server/`):
+**FastAPI API** (`server/`):
 
-```powershell
-cd server
+```bash
+# after: source venv/bin/activate  &&  cd server
 uvicorn main:app --reload
 ```
 
-**Streamlit client** (from `client/`):
+**Streamlit client** (`client/`):
 
-```powershell
-cd client
+```bash
+# after: source venv/bin/activate  &&  cd client
 streamlit run app.py
 ```
 
@@ -73,19 +107,27 @@ PyMongo  →  MongoDB (course_store)
 
 ### Run both apps (two terminals)
 
-**Terminal 1 — API:**
+Each terminal needs its **own** venv activation (same root `venv/`).
 
-```powershell
+**Terminal 1 — API (Linux / macOS):**
+
+```bash
+cd fast-api-setup
+source venv/bin/activate
 cd server
 uvicorn main:app --reload
 ```
 
-**Terminal 2 — Streamlit UI:**
+**Terminal 2 — Streamlit UI (Linux / macOS):**
 
-```powershell
+```bash
+cd fast-api-setup
+source venv/bin/activate
 cd client
 streamlit run app.py
 ```
+
+**Windows (PowerShell)** — same idea, use `.\venv\Scripts\Activate.ps1` instead of `source venv/bin/activate`.
 
 Open [http://localhost:8501](http://localhost:8501).
 

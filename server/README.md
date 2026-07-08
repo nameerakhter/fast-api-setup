@@ -4,6 +4,8 @@ Learn MongoDB with a script, then run a **FastAPI CRUD server** for a course-sel
 
 Uses the **root** virtual environment — see [../README.md](../README.md) for setup.
 
+There is **no** `venv/` inside `server/`. Always activate the root venv before running commands here.
+
 ## Collections
 
 | Collection | Fields |
@@ -17,8 +19,20 @@ Uses the **root** virtual environment — see [../README.md](../README.md) for s
 
 Do this once from the **project root** (not inside `server/`):
 
+**Linux / macOS:**
+
+```bash
+cd fast-api-setup
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+**Windows (PowerShell):**
+
 ```powershell
-cd ..   # if you are in server/
+cd fast-api-setup
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -34,12 +48,21 @@ Default value:
 MONGODB_URI=mongodb://127.0.0.1:27017/course_store
 ```
 
-For every new terminal:
+### Every new terminal
+
+```bash
+cd fast-api-setup
+source venv/bin/activate    # (venv) in prompt — required!
+cd server
+```
 
 ```powershell
+cd fast-api-setup
 .\venv\Scripts\Activate.ps1
 cd server
 ```
+
+`uvicorn: command not found` means the root venv is not active. Run `source venv/bin/activate` from the project root first.
 
 ---
 
@@ -98,11 +121,17 @@ HTTP intro: [Intro to HTTP slides](https://petal-estimate-4e9.notion.site/Intro-
 
 ### How to run the server
 
-Root venv active, inside `server/`:
+**Step 0 — activate root venv, then enter `server/`:**
+
+```bash
+cd fast-api-setup
+source venv/bin/activate
+cd server
+```
 
 **Step 1 — Start the API**
 
-```powershell
+```bash
 uvicorn main:app --reload
 ```
 
@@ -214,7 +243,10 @@ db.courses.deleteMany({})
 
 | Problem | Fix |
 | ------- | --- |
-| `ServerSelectionTimeoutError` | Start MongoDB (`net start MongoDB`) |
+| `uvicorn: command not found` | From project root: `source venv/bin/activate` (Linux) or `.\venv\Scripts\Activate.ps1` (Windows), then `pip install -r requirements.txt` |
+| `No module named 'dotenv'` | Venv active but deps missing — from project root: `pip install -r requirements.txt` |
+| `streamlit: command not found` | Same — activate root venv before `cd client` |
+| `ServerSelectionTimeoutError` | Start MongoDB (`sudo systemctl start mongod` or `net start MongoDB`) |
 | `ModuleNotFoundError` | From project root: activate venv, `pip install -r requirements.txt` |
 | Port 8000 in use | Stop other uvicorn, or use `--port 8001` |
 | Step 3+ in mongodb_steps shows empty/`None` | Run the insert step first |
