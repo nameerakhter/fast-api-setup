@@ -9,6 +9,7 @@ dependencies = [
     "pymongo>=4.10.0",
     "python-dotenv>=1.0.0",
     "streamlit>=1.40.0",
+    "httpx>=0.28.0",
 ]
 
 # From project root (with venv activated):

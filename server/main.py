@@ -21,6 +21,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pymongo import MongoClient, ReturnDocument
 
@@ -80,6 +81,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Course Store API", lifespan=lifespan)
+
+# Streamlit runs on a different port (8501). Browsers block cross-origin requests
+# unless the server says it's OK. This middleware adds those headers.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8501"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")

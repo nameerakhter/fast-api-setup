@@ -1,6 +1,6 @@
 # Course Store — Client
 
-Small **Streamlit** app for the course store UI. Not connected to the FastAPI server yet.
+**Streamlit** UI for the course store. Calls the FastAPI server over HTTP — no PyMongo here.
 
 Uses the **root** virtual environment — see [../README.md](../README.md) for setup.
 
@@ -14,8 +14,19 @@ streamlit run app.py
 
 Opens in your browser (default: http://localhost:8501).
 
-Run the API separately in another terminal (`cd server`, `uvicorn main:app --reload`) when you wire this up later.
+Run the API separately in another terminal:
 
-## Next step
+```powershell
+cd server
+uvicorn main:app --reload
+```
 
-Connect this app to `server/main.py` with HTTP requests (GET, POST, PATCH, DELETE).
+## How it connects
+
+```
+client/app.py  →  client/api.py (httpx)  →  server/main.py  →  MongoDB
+```
+
+- **Load courses** — `GET /courses` on button click only
+- **Add course** — `POST /courses`, does not auto-refetch the list
+- **Delete** — `DELETE /courses/{id}`, updates local state only
