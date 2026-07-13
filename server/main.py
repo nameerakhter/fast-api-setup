@@ -1,194 +1,188 @@
 """
-WHY THIS FILE EXISTS (read this first)
-======================================
+NATA 2026 public chatbot API (FastAPI).
 
-mongodb_steps.py runs once on your laptop, talks to MongoDB, prints a result, and exits.
-That is great for learning PyMongo — but it is NOT a website backend.
+Flow:
+  Streamlit  →  HTTP  →  FastAPI  →  Gemini + Qdrant RAG + MongoDB
 
-A course-selling site needs a program that:
-  - stays running and waits for HTTP requests (GET, POST, PATCH, DELETE)
-  - lets a React app (in the browser) fetch and change data safely
-  - keeps the MongoDB password on the server — never in the browser
-
-FastAPI is that long-running server:
-  React  →  HTTP  →  FastAPI  →  PyMongo  →  MongoDB  →  JSON back
-
-Run mongodb_steps.py first to learn PyMongo, then use this file for the real API.
+Run (from project root, venv active):
+  cd server
+  uvicorn main:app --reload
 """
 
-import os
+from __future__ import annotations
+
+from collections.abc import Iterator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from pymongo import MongoClient, ReturnDocument
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
+from pymongo import MongoClient
 
-from models import (
-    COURSES_COLLECTION,
-    USERS_COLLECTION,
-    doc_to_json,
-    parse_object_id,
-)
+from agent.public_chatbot import stream_public_chat_reply
+from chat_store import create_session, get_session, list_messages, save_message
+from config import get_settings
+from models import get_db_name_from_uri
+from rate_limit import rate_limiter
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017/course_store")
+SESSION_COOKIE = "public-chat-session-id"
 
 client: MongoClient | None = None
 db: Any = None
 
 
-# --- Request bodies (field names + types only) ---
+class ChatMessagePart(BaseModel):
+    type: Literal["text"] = "text"
+    text: str = ""
 
 
-class UserCreate(BaseModel):
-    name: str
-    email: str
-    role: str
+class ChatMessage(BaseModel):
+    id: str | None = None
+    role: Literal["user", "assistant", "system"]
+    parts: list[ChatMessagePart] | None = None
+    content: str | None = None
 
 
-class UserUpdate(BaseModel):
-    name: str | None = None
-    email: str | None = None
-    role: str | None = None
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage] = Field(default_factory=list)
 
 
-class CourseCreate(BaseModel):
-    title: str
-    description: str
-    price: float
-    instructor: str
-    published: bool
-
-
-class CourseUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    price: float | None = None
-    instructor: str | None = None
-    published: bool | None = None
+def _message_text(message: ChatMessage) -> str:
+    if message.content:
+        return message.content.strip()
+    if message.parts:
+        return "\n".join(part.text for part in message.parts if part.text).strip()
+    return ""
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global client, db
-    client = MongoClient(MONGODB_URI)
-    db = client.get_default_database()
+    settings = get_settings()
+    client = MongoClient(settings["mongodb_uri"])
+    db = client[get_db_name_from_uri()]
     print("Connected to MongoDB:", db.name)
     yield
     client.close()
     print("Disconnected from MongoDB")
 
 
-app = FastAPI(title="Course Store API", lifespan=lifespan)
+app = FastAPI(title="NATA Chatbot API", lifespan=lifespan)
 
-# Streamlit runs on a different port (8501). Browsers block cross-origin requests
-# unless the server says it's OK. This middleware adds those headers.
+settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8501"],
+    allow_origins=[settings["cors_origin"], "http://localhost:8501"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+def resolve_lang(lang: str = Query("en")) -> str:
+    if lang not in {"en", "hi"}:
+        raise HTTPException(status_code=400, detail="invalid lang")
+    return lang
+
+
+def resolve_session(
+    response: Response,
+    lang: str = Depends(resolve_lang),
+    session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE),
+) -> str:
+    if session_id:
+        existing = get_session(db, session_id)
+        if existing:
+            return str(existing["_id"])
+
+    created = create_session(db, language=lang)
+    new_id = str(created["_id"])
+    response.set_cookie(
+        key=SESSION_COOKIE,
+        value=new_id,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+    )
+    return new_id
+
+
 @app.get("/")
 def root():
-    return {"message": "Course store API — see README for routes"}
+    return {
+        "message": "NATA 2026 chatbot API",
+        "routes": {
+            "GET /public-chat?lang=en|hi": "Load session messages",
+            "POST /public-chat?lang=en|hi": "Stream assistant reply (text/plain)",
+        },
+    }
 
 
-# --- Users ---
+@app.get("/health")
+def health():
+    return {"ok": True}
 
 
-@app.get("/users")
-def list_users():
-    users = [doc_to_json(doc) for doc in db[USERS_COLLECTION].find()]
-    return users
+@app.get("/public-chat")
+def get_public_chat(
+    session_id: str = Depends(resolve_session),
+    lang: str = Depends(resolve_lang),
+):
+    _ = lang
+    return {"messages": list_messages(db, session_id), "sessionId": session_id}
 
 
-@app.post("/users", status_code=201)
-def create_user(body: UserCreate):
-    result = db[USERS_COLLECTION].insert_one(body.model_dump())
-    created = db[USERS_COLLECTION].find_one({"_id": result.inserted_id})
-    return doc_to_json(created)
+@app.post("/public-chat")
+def post_public_chat(
+    body: ChatRequest,
+    request: Request,
+    session_id: str = Depends(resolve_session),
+    lang: str = Depends(resolve_lang),
+):
+    client_ip = request.client.host if request.client else "unknown"
+    if not rate_limiter.allow(client_ip):
+        raise HTTPException(status_code=429, detail="rate limit exceeded")
 
+    if not body.messages:
+        raise HTTPException(status_code=400, detail="messages required")
 
-@app.patch("/users/{id}")
-def update_user(id: str, body: UserUpdate):
-    oid = parse_object_id(id)
-    if oid is None:
-        raise HTTPException(status_code=404, detail="User not found")
+    last = body.messages[-1]
+    if last.role != "user":
+        raise HTTPException(status_code=400, detail="last message must be from user")
 
-    updates = body.model_dump(exclude_unset=True)
-    if not updates:
-        raise HTTPException(status_code=400, detail="No fields to update")
+    user_text = _message_text(last)
+    if not user_text:
+        raise HTTPException(status_code=400, detail="empty user message")
 
-    updated = db[USERS_COLLECTION].find_one_and_update(
-        {"_id": oid},
-        {"$set": updates},
-        return_document=ReturnDocument.AFTER,
-    )
-    if updated is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return doc_to_json(updated)
+    save_message(db, session_id=session_id, role="user", text=user_text)
 
+    language_preference = "hindi" if lang == "hi" else "english"
+    payload = [
+        {
+            "role": m.role,
+            "content": _message_text(m),
+            "parts": [{"type": "text", "text": _message_text(m)}],
+        }
+        for m in body.messages
+        if _message_text(m)
+    ]
 
-@app.delete("/users/{id}")
-def delete_user(id: str):
-    oid = parse_object_id(id)
-    if oid is None:
-        raise HTTPException(status_code=404, detail="User not found")
+    collected: list[str] = []
 
-    deleted = db[USERS_COLLECTION].find_one_and_delete({"_id": oid})
-    if deleted is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return doc_to_json(deleted)
+    def token_stream() -> Iterator[str]:
+        try:
+            for chunk in stream_public_chat_reply(
+                payload, language_preference=language_preference
+            ):
+                collected.append(chunk)
+                yield chunk
+        finally:
+            full = "".join(collected).strip()
+            if full:
+                save_message(
+                    db, session_id=session_id, role="assistant", text=full
+                )
 
-
-# --- Courses ---
-
-
-@app.get("/courses")
-def list_courses():
-    courses = [doc_to_json(doc) for doc in db[COURSES_COLLECTION].find()]
-    return courses
-
-
-@app.post("/courses", status_code=201)
-def create_course(body: CourseCreate):
-    result = db[COURSES_COLLECTION].insert_one(body.model_dump())
-    created = db[COURSES_COLLECTION].find_one({"_id": result.inserted_id})
-    return doc_to_json(created)
-
-
-@app.patch("/courses/{id}")
-def update_course(id: str, body: CourseUpdate):
-    oid = parse_object_id(id)
-    if oid is None:
-        raise HTTPException(status_code=404, detail="Course not found")
-
-    updates = body.model_dump(exclude_unset=True)
-    if not updates:
-        raise HTTPException(status_code=400, detail="No fields to update")
-
-    updated = db[COURSES_COLLECTION].find_one_and_update(
-        {"_id": oid},
-        {"$set": updates},
-        return_document=ReturnDocument.AFTER,
-    )
-    if updated is None:
-        raise HTTPException(status_code=404, detail="Course not found")
-    return doc_to_json(updated)
-
-
-@app.delete("/courses/{id}")
-def delete_course(id: str):
-    oid = parse_object_id(id)
-    if oid is None:
-        raise HTTPException(status_code=404, detail="Course not found")
-
-    deleted = db[COURSES_COLLECTION].find_one_and_delete({"_id": oid})
-    if deleted is None:
-        raise HTTPException(status_code=404, detail="Course not found")
-    return doc_to_json(deleted)
+    return StreamingResponse(token_stream(), media_type="text/plain; charset=utf-8")
