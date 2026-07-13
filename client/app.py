@@ -1,134 +1,226 @@
 # =============================================================================
-# STREAMLIT UI (the "frontend")
+# NATA 2026 Chatbot — Streamlit UI
 # =============================================================================
 #
-# This is the user-facing app. It does NOT touch MongoDB.
-# Every action calls client/api.py, which sends HTTP to FastAPI (server/main.py).
+# Calls FastAPI over HTTP (client never imports PyMongo / Gemini).
 #
-# Design choices (same as the React refresher App.jsx):
-#   - Load courses  → GET only, manual button (not on page load)
-#   - Add course    → POST only, does NOT auto-refetch the list
-#   - Delete        → DELETE only, removes row from local state (no GET refetch)
-#
-# Run with: cd client && streamlit run app.py
-# Open: http://localhost:8501
-#
-# You need BOTH terminals running:
-#   1. cd server && uvicorn main:app --reload   (API on :8000)
-#   2. cd client && streamlit run app.py        (UI on :8501)
+# Terminals:
+#   1. cd server && uvicorn main:app --reload
+#   2. cd client && streamlit run app.py
 # =============================================================================
+
+from __future__ import annotations
 
 import streamlit as st
 
 import api
 
-st.set_page_config(page_title="Course Store", page_icon="📚", layout="wide")
+st.set_page_config(
+    page_title="NATA Chatbot",
+    page_icon="🏛️",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+)
 
-# Light-mode styling (also see .streamlit/config.toml)
+SUGGESTED_QUESTIONS = {
+    "en": [
+        "What is the NATA 2026 application fee for General / OBC-NCL category in India?",
+        "When is Phase 1 of NATA 2026 held, and what are the exam session timings?",
+        "How many attempts are allowed in Phase 1 and Phase 2 for NATA 2026?",
+        "Is there negative marking in NATA 2026?",
+        "What is the NATA 2026 exam pattern — duration and total marks?",
+        "Where can I contact the NATA Helpdesk or raise a ticket for application issues?",
+    ],
+    "hi": [
+        "भारत में सामान्य और अन्य पिछड़ा वर्ग (गैर-क्रीमी लेयर / OBC-NCL) उम्मीदवारों के लिए NATA 2026 का आवेदन शुल्क कितना है?",
+        "NATA 2026 का फेज़ 1 कब आयोजित होता है और परीक्षा सत्रों का समय क्या है?",
+        "NATA 2026 में फेज़ 1 और फेज़ 2 में कितने प्रयास दिए जा सकते हैं?",
+        "क्या NATA 2026 में नकारात्मक अंकन लागू होता है?",
+        "NATA 2026 की परीक्षा का स्वरूप क्या है — कुल समय और कुल अंक?",
+        "NATA हैल्पडेस्क से कैसे संपर्क करूँ या आवेदन से जुड़ी समस्याओं के लिए टिकट कहाँ से दर्ज करूँ?",
+    ],
+}
+
 st.markdown(
     """
     <style>
-        .stApp { background-color: #f8fafc; color: #0f172a; }
-        .block-container { padding-top: 2rem; max-width: 960px; }
-        div[data-testid="stMetricValue"] { color: #0f172a; }
-        .status-box {
-            background: #e2e8f0;
-            border-left: 4px solid #2563eb;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
+        .stApp { background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%); }
+        .block-container { max-width: 720px; padding-top: 1.5rem; padding-bottom: 2rem; }
+        .nata-header {
+            display: flex; align-items: center; gap: 0.75rem;
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem;
+            padding: 0.85rem 1rem; margin-bottom: 1rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+        .nata-badge {
+            width: 2.25rem; height: 2.25rem; border-radius: 0.5rem;
+            background: #0f172a; color: #fff; display: flex; align-items: center;
+            justify-content: center; font-weight: 700; font-size: 0.75rem;
+        }
+        .nata-title { font-weight: 650; color: #0f172a; font-size: 0.95rem; line-height: 1.25; }
+        div[data-testid="stChatMessage"] { background: transparent; }
+        div[data-testid="stButton"] button {
+            text-align: left; height: auto; white-space: normal;
+            padding: 0.75rem 0.9rem; border: 1px solid #e2e8f0;
         }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# session_state = data that survives when Streamlit re-runs the script on each click
-# (similar to useState in React)
-if "courses" not in st.session_state:
-    st.session_state.courses = []
-if "status" not in st.session_state:
-    st.session_state.status = "Ready — no requests yet."
+for key, default in (
+    ("lang", "en"),
+    ("messages", []),
+    ("session_id", None),
+    ("history_loaded", False),
+    ("pending_prompt", None),
+):
+    if key not in st.session_state:
+        st.session_state[key] = default
 
-st.title("Course Store")
-st.caption("Streamlit UI → HTTP → FastAPI → PyMongo → MongoDB")
 
-st.markdown(f'<div class="status-box"><strong>Status:</strong> {st.session_state.status}</div>', unsafe_allow_html=True)
+def load_history() -> None:
+    try:
+        messages, session_id = api.get_messages(
+            lang=st.session_state.lang,
+            session_id=st.session_state.session_id,
+        )
+        st.session_state.session_id = session_id
+        normalized = []
+        for message in messages:
+            role = message.get("role", "assistant")
+            text = message.get("content") or ""
+            if not text and message.get("parts"):
+                text = "\n".join(
+                    part.get("text", "")
+                    for part in message["parts"]
+                    if isinstance(part, dict)
+                )
+            if text.strip():
+                normalized.append({"role": role, "content": text.strip()})
+        st.session_state.messages = normalized
+    except Exception as exc:
+        st.warning(f"Could not load chat history: {exc}")
+    finally:
+        st.session_state.history_loaded = True
 
-# --- load courses (GET, manual) ---
-col_load, col_count = st.columns([1, 3])
-with col_load:
-    if st.button("Load courses", type="primary"):
+
+if not st.session_state.history_loaded:
+    load_history()
+
+st.markdown(
+    """
+    <div class="nata-header">
+      <div class="nata-badge">NATA</div>
+      <div class="nata-title">NATA (National Aptitude Test in Architecture)</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+col_lang, col_new = st.columns([2, 1])
+with col_lang:
+    selected = st.radio(
+        "Language / भाषा",
+        options=["en", "hi"],
+        format_func=lambda v: "English" if v == "en" else "हिन्दी",
+        horizontal=True,
+        label_visibility="collapsed",
+        key="lang_radio",
+    )
+with col_new:
+    if st.button("New chat", use_container_width=True):
+        st.session_state.session_id = None
+        st.session_state.messages = []
+        st.session_state.history_loaded = False
+        st.session_state.pending_prompt = None
+        st.rerun()
+
+if selected != st.session_state.lang:
+    st.session_state.lang = selected
+    st.session_state.session_id = None
+    st.session_state.messages = []
+    st.session_state.history_loaded = False
+    st.session_state.pending_prompt = None
+    st.rerun()
+
+lang = st.session_state.lang
+
+
+def run_chat_turn(user_text: str) -> None:
+    user_text = user_text.strip()
+    if not user_text:
+        return
+
+    st.session_state.messages.append({"role": "user", "content": user_text})
+    with st.chat_message("user"):
+        st.markdown(user_text)
+
+    api_messages = [
+        {
+            "role": m["role"],
+            "parts": [{"type": "text", "text": m["content"]}],
+            "content": m["content"],
+        }
+        for m in st.session_state.messages
+    ]
+    session_out: dict = {}
+
+    with st.chat_message("assistant"):
         try:
-            st.session_state.courses = api.get_courses()
-            st.session_state.status = f"GET /courses — loaded {len(st.session_state.courses)} course(s)."
+            reply = st.write_stream(
+                api.stream_chat(
+                    api_messages,
+                    lang=lang,
+                    session_id=st.session_state.session_id,
+                    session_out=session_out,
+                )
+            )
+            if session_out.get("session_id"):
+                st.session_state.session_id = session_out["session_id"]
+            st.session_state.messages.append(
+                {"role": "assistant", "content": str(reply)}
+            )
         except Exception as exc:
-            st.session_state.status = f"GET /courses failed: {exc}"
+            error = f"Error: {exc}"
+            st.error(error)
+            st.session_state.messages.append({"role": "assistant", "content": error})
 
-with col_count:
-    st.metric("Courses in view", len(st.session_state.courses))
 
-st.divider()
-st.subheader("Add course")
+pending = st.session_state.pending_prompt
+if pending:
+    st.session_state.pending_prompt = None
 
-# --- add course (POST, no auto-refetch) ---
-with st.form("add_course_form", clear_on_submit=True):
-    title = st.text_input("Title", placeholder="Intro to Python")
-    description = st.text_area("Description", placeholder="A beginner-friendly course.")
-    instructor = st.text_input("Instructor", placeholder="Bob")
-    price = st.number_input("Price", min_value=0.0, step=1.0, value=0.0)
-    published = st.checkbox("Published", value=True)
-    submitted = st.form_submit_button("Add course")
+show_empty = not st.session_state.messages and not pending
+if show_empty:
+    empty_title = "बातचीत शुरू करें" if lang == "hi" else "Start a conversation"
+    empty_desc = (
+        "नीचे लिखें या सुझाए गए प्रश्न में से कोई एक चुनें"
+        if lang == "hi"
+        else "Type below or tap a suggested NATA question"
+    )
+    st.subheader(empty_title)
+    st.caption(empty_desc)
 
-    if submitted:
-        if not title.strip():
-            st.session_state.status = "POST /courses skipped — title is required."
-        else:
-            try:
-                created = api.create_course(
-                    title=title.strip(),
-                    description=description.strip(),
-                    instructor=instructor.strip(),
-                    price=price,
-                    published=published,
-                )
-                st.session_state.status = (
-                    f"POST /courses — created \"{created['title']}\" (id: {created['id']}). "
-                    "List not refetched."
-                )
-            except Exception as exc:
-                st.session_state.status = f"POST /courses failed: {exc}"
-
-st.divider()
-st.subheader("Courses")
-
-# --- course list + delete (DELETE, update local state only) ---
-if not st.session_state.courses:
-    st.info("No courses loaded. Click **Load courses** to fetch from the API.")
+    cols = st.columns(2)
+    for index, question in enumerate(SUGGESTED_QUESTIONS[lang]):
+        with cols[index % 2]:
+            if st.button(
+                question,
+                key=f"suggest-{lang}-{index}",
+                use_container_width=True,
+            ):
+                st.session_state.pending_prompt = question
+                st.rerun()
 else:
-    for course in st.session_state.courses:
-        with st.container(border=True):
-            left, right = st.columns([4, 1])
-            with left:
-                st.markdown(f"**{course['title']}**")
-                if course.get("description"):
-                    st.write(course["description"])
-                st.caption(
-                    f"Instructor: {course.get('instructor') or '—'} · "
-                    f"Price: ${course.get('price', 0):.2f} · "
-                    f"Published: {'yes' if course.get('published') else 'no'}"
-                )
-                st.caption(f"ID: `{course['id']}`")
-            with right:
-                if st.button("Delete", key=f"delete-{course['id']}"):
-                    try:
-                        api.delete_course(course["id"])
-                        # Remove from local list — we do NOT call get_courses() again
-                        st.session_state.courses = [
-                            item for item in st.session_state.courses if item["id"] != course["id"]
-                        ]
-                        st.session_state.status = (
-                            f"DELETE /courses/{course['id']} — removed locally (no GET refetch)."
-                        )
-                    except Exception as exc:
-                        st.session_state.status = f"DELETE /courses/{course['id']} failed: {exc}"
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+prompt = st.chat_input(
+    "अपना प्रश्न लिखें..." if lang == "hi" else "Enter your question..."
+)
+if pending:
+    run_chat_turn(pending)
+elif prompt:
+    run_chat_turn(prompt)
