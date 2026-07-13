@@ -1,0 +1,232 @@
+{
+  "title": "NATA 2026 FAQs",
+  "faqs": [
+    {
+      "question": "What is NATA?",
+      "answer": "National Aptitude Test in Architecture (NATA) is conducted by Council Of Architecture to qualify for admission to Bachelor of Architecture in COA-approved institutes."
+    },
+    {
+      "question": "How to register?",
+      "answer": "NATA 2026 registration has started from March 11, 2026. You can register at [Register Now](https://stureg.nata-app.org/auth/login)."
+    },
+    {
+      "question": "How many attempts can we take?",
+      "answer": "A candidate may appear for up to two attempts in Phase 1 from 4th April to 13th June for being considered through the Centralized Admission Counselling or one attempt in Phase 2 for admission to the vacant seats."
+    },
+    {
+      "question": "Is it necessary to give the NATA exam for pursuing B.Arch?",
+      "answer": "Passing an Aptitude Test in Architecture conducted either by the Council of Architecture (NATA) or NTA (i.e. JEE) for admission to the Architecture degree Programme is mandatory. NATA is conducted for admission to Bachelor of Architecture into COA-approved institutions across the country."
+    },
+    {
+      "question": "Result Dates?",
+      "answer": "Each attempt will generate a raw score, and a Statement of Marks/Score Card indicating the raw score obtained will be issued after every attempt. The Percentile Score shall be computed after completion of all test sessions in Phase-1 (April-June 2026) based on the candidate's best performance in the permitted attempts."
+    },
+    {
+      "question": "How soon after the test date is the NATA result declared?",
+      "answer": "As published in the NATA 2026 activity timeline schedule, Declaration of result is communicated within **7 days** from the date of each test."
+    },
+    {
+      "question": "When is Phase 1 of NATA 2026 held, and what are the exam session timings?",
+      "answer": "Phase 1 is held on every Friday and Saturday from 4th April 2026 to 13th June 2026, except on public holidays. Published session timings are: morning 10:00 am–1:00 pm; afternoon 1:30 pm–4:30 pm."
+    },
+    {
+      "question": "When will I get my admit card?",
+      "answer": "As per the NATA 2026 activity timeline: your downloadable admit card is published on **Tuesday** for that week's **Friday** exam, and on **Wednesday** for that week's **Saturday** exam. All schedules are subject to change — see the official schedule at https://nata.in/schedule.html"
+    },
+    {
+      "question": "NATA safe score? What is a good score in NATA?",
+      "answer": "The Final Scorecard in NATA 2026, containing the best Raw Score and Percentile Score (for Phase-1) or Raw Score (for Phase-2) calculated in accordance with the prescribed percentile-based scoring methodology. However, no minimum Raw Score is prescribed for qualifying in NATA 2026."
+    },
+    {
+      "question": "In the 'additional subject' option while filing the form, do we only have to add one subject?",
+      "answer": "Yes."
+    },
+    {
+      "question": "How long does it take to get thoroughly prepared for NATA?",
+      "answer": "NATA is an aptitude assessment that seeks to discern a candidate's innate creative and analytical instincts through diverse modes of evaluation. It measures an inherent sensibility, one that cannot be coached into existence, memorised into mastery, or artificially instilled."
+    },
+    {
+      "question": "Cutoff for college?",
+      "answer": "The Council of Architecture does not maintain or release college-wise cutoffs. Each institution sets its own admission criteria based on NATA scores and other requirements."
+    },
+    {
+      "question": "How many marks for one correct answer in MCQ?",
+      "answer": "In NATA, there's no fixed mark per question, each carries different weightage based on difficulty. The aptitude section (Part B) totals 120 marks, with 42 MCQs and 8 NCQs, so marks vary across questions."
+    },
+    {
+      "question": "Paper pattern?",
+      "answer": "The NATA 2026 is a 3-hour (200 marks) exam with a hybrid format combining offline drawing and online aptitude. It has 2 parts:\n\nPart A (Offline – 90 mins | 80 marks): Drawing & Composition\n- A1: Composition & Color (25)\n- A2: Sketching (25)\n- A3: 3D Composition (30)\n\nPart B (Online – 90 mins | 120 marks): 42 MCQs + 8 NCQs (covers logical reasoning, maths, architecture awareness, and visual ability)"
+    },
+    {
+      "question": "Can we write the NATA exam again for a better college after taking admission into a college already?",
+      "answer": "Yes."
+    },
+    {
+      "question": "Previous year question papers?",
+      "answer": "NATA does not have a fixed question paper. As each test is uniquely generated for every student by the system."
+    },
+    {
+      "question": "Best colleges and their details?",
+      "answer": "Please refer to the COA approved institutions list."
+    },
+    {
+      "question": "Which pathway to practice to follow to clear NATA for a 12th class PCB student?",
+      "answer": "Please check eligibility. Physics and Mathematics are compulsory subjects for appearing for NATA 2026."
+    },
+    {
+      "question": "Will 12th board exam marks be counted for the admission process in colleges?",
+      "answer": "As per COA regulations, merit is to be drawn based on 12th score and NATA score. However, every admission authority has its own procedure for drawing merit."
+    },
+    {
+      "question": "Do we need to maintain some gap between the two attempts?",
+      "answer": "It is the choice of the concerned candidate."
+    },
+    {
+      "question": "Which colleges through NATA?",
+      "answer": "NATA-2026 Aptitude Test is for admissions into COA-approved Architectural Institutions all over India, with the exception of centrally funded institutions which typically take admission through JEE. You will need to check the website or contact the specific institution you are interested in for more information.\n\nList of COA approved Institutions: https://ecoa.in/academic/public/Apporved-Institution-UG-2025"
+    },
+    {
+      "question": "Can a ruler/scale be used during the NATA Exam?",
+      "answer": "Yes, a scale up to 15 cms must be brought by the candidates."
+    },
+    {
+      "question": "Which topics to cover in the Aptitude Exam?",
+      "answer": "Part B is a 90-minute, 120-mark online adaptive test with 42 MCQs (B1) and 8 NCQs (B2).",
+      "topics": [
+        {
+          "name": "Visual Reasoning",
+          "description": "Ability to understand and reconstruct 2D and 3D composition, knowledge about its composition and technical concepts."
+        },
+        {
+          "name": "Logical Derivation",
+          "description": "Ability to decode a situation, composition, context and generate meaning. Understanding the minute information hidden in a particular situation and drawing conclusions."
+        },
+        {
+          "name": "General Knowledge, Architecture & Design",
+          "description": "General awareness of architecture and design, current issues, recent episodes etc. Knowledge about important buildings, historical progression, innovation in materials and construction technology."
+        },
+        {
+          "name": "Language Interpretation",
+          "description": "Ability to correctly and logically generate meaning of words, sentences, understanding about English grammar."
+        },
+        {
+          "name": "Design Sensitivity and Thinking",
+          "description": "Ability to observe, record and analyse people, space, product, environment. Critical thinking, reasoning and ability to identify subtle communications. Ability to understand semantics, metaphors, problem identification and definition, analysis of a given situation."
+        },
+        {
+          "name": "Numerical Ability",
+          "description": "Basic Mathematics and its association with creative thinking. To unfold a space with the use of geometry."
+        }
+      ]
+    },
+    {
+      "question": "Why is NATA an adaptive test?",
+      "answer": "NATA assesses an individual's skill level and pinpoints proficiency more precisely by adjusting question difficulty in real-time based on a test-taker's performance. The adaptiveness of the test provides more accurate, efficient, and personalized evaluations."
+    },
+    {
+      "question": "Can an 11th grade completed student take the exam?",
+      "answer": "No. Only students who have passed or are appearing in the 12th Examination, or students who have passed or are appearing in a 10+3 Diploma Examination with Mathematics as a subject can appear for NATA 2026."
+    },
+    {
+      "question": "Does NATA need strong maths like an engineering exam?",
+      "answer": "No, it tests basic 10+2 Mathematics."
+    },
+    {
+      "question": "Is there negative marking in NATA 2026?",
+      "answer": "No, there is no negative marking in NATA 2026."
+    },
+    {
+      "question": "Allowed stationery?",
+      "answer": "Pencils, erasers, dry colors, and a scale (up to 15 cms)."
+    },
+    {
+      "question": "Can we decide our shift timings?",
+      "answer": "Yes, candidates can select their preferred city/region and test date while registering on the NATA portal (www.nata.in). The session shall be allotted by Council as far as possible based on the candidates' preferences."
+    },
+    {
+      "question": "Is the CET exam also mandatory to give while giving NATA?",
+      "answer": "No, appearing for CET is not mandatory."
+    },
+    {
+      "question": "Can I take the NATA exam after April?",
+      "answer": "Yes, the exams will be conducted on every Friday and Saturday (except public holidays) from 4th April 2026 till 13th June 2026."
+    },
+    {
+      "question": "How does NATA ensure that its evaluation truly identifies creative architectural thinking and problem-solving ability?",
+      "answer": "NATA is designed to test how you think. Through situation-based drawing questions and a separate aptitude section, it evaluates spatial understanding, creativity, logic, and how you respond to real-world design problems. While it can't fully capture long-term design ability in a few hours, it focuses on identifying design thinking potential rather than just artistic skill."
+    },
+    {
+      "question": "How can I get NATA Scorecards for previous years?",
+      "answer": "Through the NATA 2026 Portal, scorecards for ONLY NATA 2026 will be available. For previous year's scorecards, candidates may please reach out to the office of Council of Architecture, New Delhi at https://coa.gov.in."
+    },
+    {
+      "question": "Correction in Student Profile Data for NATA 2026?",
+      "answer": "Students should enter data correctly at the time of registration as per the instructions provided. In case a correction is needed, students shall raise a ticket at the NATA Helpdesk, mentioning their NATA Application Number and uploading supporting documents. Without these, corrections will not be made."
+    },
+    {
+      "question": "How to Register for NATA Helpdesk?",
+      "answer": "NATA Helpdesk can be reached at https://help.nata-app.org.",
+      "steps": [
+        "Click on the Sign Up button on the top right corner of the screen.",
+        "Enter your Name, Email, and the CAPTCHA shown to sign up.",
+        "You will receive an Invitation to Access NATA Helpdesk on the email entered.",
+        "Click on the Invitation Link and set your password.",
+        "After logging in, click on CREATE TICKET to raise your query."
+      ],
+      "important_guidelines": [
+        "Always read the Knowledgebase Articles to see if your query is already answered there.",
+        "Always mention your NATA Application Number (if registered for NATA 2025/2026) in the query text.",
+        "Attach scanned copies of necessary documents or screenshots wherever necessary.",
+        "NATA Helpdesk tickets are answered within 1 working day. Telephonic support is provided only in case of absolute emergency or if the ticket is not answered in time."
+      ]
+    },
+    {
+      "question": "Eligibility for NATA 2026?",
+      "answer": "To be eligible for NATA 2026, you must have Physics and Mathematics as compulsory subjects. You must have passed or be appearing in the 12th Examination, or passed or be appearing in a 10+3 Diploma Examination with Mathematics as a compulsory subject, with at least 45% marks in aggregate in both cases."
+    },
+    {
+      "question": "NATA Scholarship?",
+      "answer": "The Top 50 meritorious candidates of NATA will be awarded scholarship under the NATA Rankers Award. The top 50 candidates qualifying NATA 2025 will have up to 50% of first-year tuition fee, Maximum ₹50,000 per candidate and it will be disbursed upon confirmed admission to a recognized B.Arch. program."
+    },
+    {
+      "question": "How many times can I give NATA / how many attempts can I take?",
+      "answer": "A candidate may appear for up to two attempts in Phase 1 from 4th April to 13th June for being considered through the Centralized Admission Counselling or one attempt in Phase 2 for admission to the vacant seats."
+    },
+    {
+      "question": "What materials do I need to carry with me for the test?",
+      "answer": "Candidates must bring: (a) Downloaded Original Appointment Card of NATA-2026, (b) Original Proof of Identity - Aadhaar/Passport/Driving License/Voter ID/Valid Photo ID document, (c) Pencils, erasers, dry colors, Scale (up to 15 Cms)."
+    },
+    {
+      "question": "How to select my test centre?",
+      "answer": "Candidates must indicate their preferred city/region and test date while registering on the NATA portal (www.nata.in). The test centre and session shall be allotted by the Council as far as possible based on the candidates' preferences. However, the final decision of the Council regarding allotment of test centre and session shall be binding."
+    },
+    {
+      "question": "For how long is NATA score valid?",
+      "answer": "The NATA 2026 score shall be valid for the academic session 2026-2027."
+    },
+    {
+      "question": "I gave NATA 2025, can I get admission in BArch this year? What is the validity period of NATA scores from previous years for current admissions?",
+      "answer": "Candidates with a valid and qualifying NATA 2025 score, who have not taken admission during 2025-2026 (as per Council records) and do not appear in NATA 2026, shall also be assigned a Percentile Score for admission during CAP round, since the NATA 2025 Score Card remains valid for the academic session 2026–2027. For admission against Vacant Seats, the best score indicated in the NATA 2025 Scorecard shall be treated as the Raw Score for such candidates."
+    },
+    {
+      "question": "Why is there Phase 2?",
+      "answer": "Phase-2 examination is an additional set of NATA examination on August 7 & 8, 2026 for candidates who did not appear in Phase-1 but wish to seek admission against vacant seats in B.Arch. degree program after completion of the Centralized Admission Process (CAP). The candidates who have already attempted Phase-1 will not be eligible to take the Phase-2 examination. The Phase-2 schedule is: August 7, 2026 (Friday) - Afternoon session; August 8, 2026 (Saturday) - Morning and Afternoon sessions."
+    },
+    {
+      "question": "What will be asked in the General Knowledge section?",
+      "answer": "It will cover the general awareness of architecture and design, current issues, recent episodes etc., knowledge about important buildings, historical progression, innovation in materials and construction technology."
+    },
+    {
+      "question": "What subjects other than Physics and Mathematics are required?",
+      "answer": "A candidate must have passed 10+2 or equivalent examination with Physics and Mathematics as compulsory subjects along with either Chemistry or Biology or Technical Vocational subject or Computer Science or Information Technology or Informatics Practices or Engineering Graphics or Business Studies with at least 45% marks in aggregate to appear and to secure admission to an Architecture course."
+    },
+    {
+      "question": "Will I get a writing pad in the exam?",
+      "answer": "Candidates shall be provided with paper for any rough work. Candidates are required to perform/solve on the paper/base/material provided by the Test Centers only."
+    },
+    {
+      "question": "I gave NATA 2025 and will give NATA 2026 as well. Which score will be considered for counselling?",
+      "answer": "If you obtained a valid NATA 2025 score, the following rules apply based on your NATA 2026 attempts: (1) If you appear in 1st Attempt (Phase-1) of NATA 2026: the better of both scores of NATA 2025 & 2026 will be considered. (2) If you appear in both 1st & 2nd Attempt (Phase-1) of NATA 2026: the best of two scores of NATA 2026 will be considered, and your NATA 2025 score shall be rendered invalid. (3) If you appear in 1st Attempt (Phase-2) of NATA 2026 (having not appeared during Phase-1): your NATA 2026 score will be considered, and your NATA 2025 score shall be rendered invalid."
+    }
+  ]
+}
