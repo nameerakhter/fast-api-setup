@@ -1,138 +1,154 @@
-# FastAPI Setup
+# NATA 2026 Chatbot
 
-Course store teaching repo: **PyMongo** + **FastAPI** backend, **Streamlit** client.
+A beginner-friendly **Python** chatbot that answers questions about **NATA 2026**
+(National Aptitude Test in Architecture).
 
-| Folder | What it is |
-| ------ | ---------- |
-| [`server/`](server/README.md) | MongoDB scripts + FastAPI CRUD API |
-| [`client/`](client/README.md) | Streamlit UI (calls the API over HTTP) |
+| Piece | Technology | Folder |
+| ----- | ---------- | ------ |
+| Chat UI | Streamlit | [`client/`](client/README.md) |
+| Backend API | FastAPI | [`server/`](server/README.md) |
+| Chat history | MongoDB | via `MONGODB_URI` |
+| Knowledge search (RAG) | Qdrant + Gemini embeddings | via `QDRANT_*` |
+| Answers / safety router | Google Gemini | via `GOOGLE_GENERATIVE_AI_API_KEY` |
 
-Everything uses **one virtual environment at the project root** (`fast-api-setup/venv/`).
+> **Mental model:** Streamlit is only the front end. It never talks to MongoDB or
+> Gemini directly. Every click becomes an HTTP call to FastAPI, just like a
+> React app calling an API.
 
-There is **no** separate venv inside `server/` or `client/`. If you `cd server` or `cd client` without activating the root venv first, commands like `uvicorn` and `streamlit` will fail with **command not found**.
-
-## One-time setup
-
-From the project root (`fast-api-setup/`):
-
-**Linux / macOS (bash):**
-
-```bash
-python -m venv venv
-source venv/bin/activate    # prompt shows (venv)
-pip install -r requirements.txt
-cp .env.example .env
-# start MongoDB (e.g. sudo systemctl start mongod)
+```
+You (browser)
+   │
+   ▼
+Streamlit UI  (:8501)     ← client/
+   │  HTTP
+   ▼
+FastAPI       (:8000)     ← server/
+   ├── MongoDB            (save chat sessions)
+   ├── Qdrant             (search FAQs / website text)
+   └── Gemini             (decide if question is allowed + write answer)
 ```
 
-**Windows (PowerShell):**
+---
+
+## What you need before starting
+
+1. **Python 3.10+** installed
+2. **MongoDB** running locally (or an Atlas connection string)
+3. A **Google AI Studio API key** for Gemini
+4. A **Qdrant** collection (Qdrant Cloud free tier is fine)
+
+You do **not** need Node.js for this Python port.
+
+---
+
+## 1. One-time setup
+
+Open a terminal in the **project root** (`fast-api-setup/`).
+
+### Windows (PowerShell)
 
 ```powershell
 python -m venv venv
-.\venv\Scripts\Activate.ps1    # prompt shows (venv)
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
-net start MongoDB
 ```
 
-Your prompt should show `(venv)` when the environment is active.
-
-## Activate venv (every new terminal)
-
-Open a terminal, go to the **project root**, activate venv, **then** `cd` into `server/` or `client/`:
-
-**Linux / macOS:**
+### Linux / macOS
 
 ```bash
-cd fast-api-setup          # project root
-source venv/bin/activate   # (venv) must appear in your prompt
-cd server                  # or: cd client
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
 ```
 
-**Windows (PowerShell):**
+Your prompt should show `(venv)`.
+
+### Fill in `.env`
+
+Open `.env` (created from [`.env.example`](.env.example)) and set at least:
+
+| Variable | What to put |
+| -------- | ----------- |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Your Gemini API key |
+| `QDRANT_URL` | Qdrant cluster URL |
+| `QDRANT_API_KEY` | Qdrant API key (empty for unsecured local Qdrant) |
+| `QDRANT_COLLECTION_NAME` | e.g. `nata_knowledge` |
+| `MONGODB_URI` | Default local URI usually works |
+
+Never commit `.env` — it is gitignored because it holds secrets.
+
+---
+
+## 2. Index the knowledge base (required once)
+
+The bot answers from FAQs + website excerpts. Those texts must be embedded into Qdrant first.
+
+```powershell
+# venv already active, from project root
+cd server
+python scripts/generate_embeddings.py
+```
+
+Rebuild from scratch later with:
+
+```powershell
+python scripts/generate_embeddings.py --reset
+```
+
+---
+
+## 3. Run the app (two terminals)
+
+Each terminal needs the **root venv** activated first.
+
+### Terminal 1 — API
 
 ```powershell
 cd fast-api-setup
 .\venv\Scripts\Activate.ps1
-cd server                  # or: cd client
-```
-
-If you see `bash: uvicorn: command not found`, you forgot to activate the root venv (or never ran `pip install -r requirements.txt`).
-
-If you see `No module named 'dotenv'`, the venv is active but dependencies are outdated — from project root run `pip install -r requirements.txt`.
-
-## Run commands
-
-**Always:** project root → activate venv → `cd server` or `cd client` → run command.
-
-**MongoDB tutorial** (`server/`):
-
-```bash
-# after: source venv/bin/activate  &&  cd server
-python mongodb_steps.py
-```
-
-**FastAPI API** (`server/`):
-
-```bash
-# after: source venv/bin/activate  &&  cd server
-uvicorn main:app --reload
-```
-
-**Streamlit client** (`client/`):
-
-```bash
-# after: source venv/bin/activate  &&  cd client
-streamlit run app.py
-```
-
-## Streamlit + FastAPI
-
-Streamlit is a **client** — it calls FastAPI over HTTP with `httpx`, the same way a React app would use `fetch` against a Hono server. Streamlit does **not** import PyMongo.
-
-### Request flow
-
-```
-Streamlit UI (client/app.py)
-    │  button / form
-    ▼
-HTTP client (client/api.py)  —  GET / POST / DELETE
-    │  http://localhost:8000
-    ▼
-FastAPI (server/main.py)
-    │  route handlers
-    ▼
-PyMongo  →  MongoDB (course_store)
-```
-
-### Run both apps (two terminals)
-
-Each terminal needs its **own** venv activation (same root `venv/`).
-
-**Terminal 1 — API (Linux / macOS):**
-
-```bash
-cd fast-api-setup
-source venv/bin/activate
 cd server
 uvicorn main:app --reload
 ```
 
-**Terminal 2 — Streamlit UI (Linux / macOS):**
+API: [http://localhost:8000](http://localhost:8000)  
+Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-```bash
+### Terminal 2 — Chat UI
+
+```powershell
 cd fast-api-setup
-source venv/bin/activate
+.\venv\Scripts\Activate.ps1
 cd client
 streamlit run app.py
 ```
 
-**Windows (PowerShell)** — same idea, use `.\venv\Scripts\Activate.ps1` instead of `source venv/bin/activate`.
+UI: [http://localhost:8501](http://localhost:8501)
 
-Open [http://localhost:8501](http://localhost:8501).
+---
 
-- **Load courses** — sends `GET /courses` only when you click the button (not on page load).
-- **Add course** — sends `POST /courses`; the list is **not** auto-refetched.
-- **Delete** — sends `DELETE /courses/{id}` and removes the row from local state only.
+## Quick checks if something fails
 
-See [server/README.md](server/README.md) and [client/README.md](client/README.md) for details.
+| Problem | Likely fix |
+| ------- | ---------- |
+| `uvicorn` / `streamlit` not found | Activate root `venv` from project root |
+| Gemini errors | Check `GOOGLE_GENERATIVE_AI_API_KEY` in `.env` |
+| Empty / weak answers | Run `generate_embeddings.py` and confirm Qdrant vars |
+| Chat history not saving | Start MongoDB / fix `MONGODB_URI` |
+| Streamlit cannot reach API | Keep FastAPI running on port `8000` |
+
+More detail: [`server/README.md`](server/README.md) · [`client/README.md`](client/README.md)
+
+---
+
+## Project map
+
+```
+fast-api-setup/
+├── .env.example          ← copy to .env and fill secrets
+├── requirements.txt      ← pip packages
+├── README.md             ← you are here
+├── client/               ← Streamlit UI
+└── server/               ← FastAPI + RAG + agents + knowledge data
+```
