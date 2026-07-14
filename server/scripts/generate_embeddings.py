@@ -13,6 +13,7 @@ import argparse
 import json
 import re
 import sys
+import time
 import uuid
 from pathlib import Path
 
@@ -30,6 +31,8 @@ from gemini_client import embed_text
 DATA_DIR = SERVER_DIR / "data"
 WEBSITE_DIR = DATA_DIR / "nata-website-data"
 FAQ_PATH = DATA_DIR / "nata_faqs.json"
+UPSERT_BATCH_SIZE = 16
+UPSERT_MAX_ATTEMPTS = 5
 
 
 def get_website_chunks() -> list[dict[str, str]]:
@@ -80,6 +83,37 @@ def ensure_collection(client: QdrantClient, name: str, dimensions: int) -> None:
             raise
 
 
+def upsert_in_batches(
+    client: QdrantClient,
+    collection: str,
+    points: list[qmodels.PointStruct],
+    batch_size: int = UPSERT_BATCH_SIZE,
+) -> None:
+    total = len(points)
+    for start in range(0, total, batch_size):
+        batch = points[start : start + batch_size]
+        end = start + len(batch)
+        last_error: Exception | None = None
+        for attempt in range(1, UPSERT_MAX_ATTEMPTS + 1):
+            try:
+                client.upsert(collection_name=collection, points=batch, wait=True)
+                print(f"  [Qdrant] upserted {end}/{total}")
+                last_error = None
+                break
+            except Exception as exc:
+                last_error = exc
+                wait_s = min(2 ** attempt, 20)
+                print(
+                    f"  [Qdrant] upsert {start + 1}-{end} failed "
+                    f"(attempt {attempt}/{UPSERT_MAX_ATTEMPTS}): {exc}"
+                )
+                if attempt < UPSERT_MAX_ATTEMPTS:
+                    print(f"  retrying in {wait_s}s...")
+                    time.sleep(wait_s)
+        if last_error is not None:
+            raise last_error
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Embed NATA knowledge into Qdrant")
     parser.add_argument(
@@ -98,6 +132,7 @@ def main() -> None:
     client = QdrantClient(
         url=settings["qdrant_url"],
         api_key=settings["qdrant_api_key"] or None,
+        timeout=120,
     )
     collection = settings["qdrant_collection_name"]
     dims = settings["embedding_dimensions"]
@@ -128,7 +163,8 @@ def main() -> None:
         )
         print(f"  [{i}/{len(all_chunks)}] embedded ({chunk['source']})")
 
-    client.upsert(collection_name=collection, points=points, wait=True)
+    print(f"Upserting {len(points)} points in batches of {UPSERT_BATCH_SIZE}...")
+    upsert_in_batches(client, collection, points)
     print(f"[Qdrant] Upserted {len(points)} points into '{collection}'. Done.")
 
 
