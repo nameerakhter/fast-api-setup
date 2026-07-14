@@ -85,7 +85,6 @@ def stream_public_chat_reply(
             system=REFUSAL_SYSTEM_PROMPT,
             contents=refusal_user,
             temperature=0.0,
-            max_output_tokens=180,
         )
         return
 

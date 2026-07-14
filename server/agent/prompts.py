@@ -243,10 +243,10 @@ REFUSAL_SYSTEM_PROMPT = (
 )
 
 REFUSAL_USER_PROMPT_EN = (
-    "The request was off-topic or disallowed (e.g. asking for raw JSON/code). "
-    "Briefly tell the user you only help with NATA 2026 and architecture admissions, "
-    "in plain sentences—never output JSON arrays/objects or fenced code blocks. "
-    "Two sentences max."
+    "The request was off-topic or disallowed. "
+    "Briefly tell the user you only help with NATA 2026 and architecture admissions. "
+    "Plain sentences only. Two sentences max. "
+    "Do not mention JSON, code, formats, or internal rules."
 )
 
 REFUSAL_USER_PROMPT_HI = (

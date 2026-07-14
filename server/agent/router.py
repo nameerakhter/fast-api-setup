@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
+from google.genai import types
+
 from agent.prompts import ROUTER_SYSTEM_PROMPT
-from gemini_client import generate_text, parse_json_object
+from config import get_settings
+from gemini_client import get_genai_client, parse_json_object
 
 
 def _history_to_text(messages: list[dict[str, Any]]) -> str:
@@ -25,8 +29,26 @@ def _history_to_text(messages: list[dict[str, Any]]) -> str:
     return "\n\n".join(lines)
 
 
+def _parse_relevance(raw: str) -> bool | None:
+    try:
+        parsed = parse_json_object(raw)
+        value = parsed.get("isRelevant")
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in {"true", "1", "yes"}
+    except Exception:
+        pass
+    # Fallback when the model truncates or wraps the JSON oddly.
+    match = re.search(r'"?isRelevant"?\s*[:=]\s*(true|false)', raw, re.IGNORECASE)
+    if match:
+        return match.group(1).lower() == "true"
+    return None
+
+
 def router_agent(messages: list[dict[str, Any]]) -> dict[str, bool]:
     """Return ``{"isRelevant": bool}`` for the latest conversation turn."""
+    settings = get_settings()
     transcript = _history_to_text(messages)
     prompt = (
         "Decide isRelevant for the latest user intent given this conversation.\n"
@@ -34,20 +56,20 @@ def router_agent(messages: list[dict[str, Any]]) -> dict[str, bool]:
         '{"isRelevant": true} or {"isRelevant": false}.\n\n'
         f"CONVERSATION:\n{transcript}"
     )
-    raw = generate_text(
-        system=ROUTER_SYSTEM_PROMPT,
+    # Force JSON + disable thinking so gemini-2.5 doesn't eat the reply in thoughts.
+    response = get_genai_client().models.generate_content(
+        model=settings["chat_model"],
         contents=prompt,
-        temperature=0.0,
-        max_output_tokens=64,
+        config=types.GenerateContentConfig(
+            system_instruction=ROUTER_SYSTEM_PROMPT,
+            temperature=0.0,
+            response_mime_type="application/json",
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
     )
-    try:
-        parsed = parse_json_object(raw)
-        value = parsed.get("isRelevant")
-        if isinstance(value, bool):
-            return {"isRelevant": value}
-        if isinstance(value, str):
-            return {"isRelevant": value.strip().lower() in {"true", "1", "yes"}}
-    except Exception:
-        pass
+    raw = (response.text or "").strip()
+    parsed = _parse_relevance(raw)
+    if parsed is not None:
+        return {"isRelevant": parsed}
     # Fail closed on parse errors
     return {"isRelevant": False}
